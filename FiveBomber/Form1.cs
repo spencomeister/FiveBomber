@@ -3,18 +3,21 @@ using System.Threading;
 using System.Timers;
 using System.Windows.Forms;
 
+
+
 namespace FiveBomber
 {
+
     public partial class Form1 : Form
     {
-        // This field stores an array of ProgressBar controls.
         private readonly ProgressBar[] _progressBars;
-        // This field stores a reference to the System.Threading.Timer object.
         private readonly System.Threading.Timer _timerField;
-        // This field stores a reference to the currently running System.Threading.Timer object.
         private System.Threading.Timer _timer;
-        // This field stores an array of boolean values indicating whether each ProgressBar is processing.
         private readonly bool[] _isProcessing;
+        private bool _isTimerDisposed = false;
+
+        public const int MAX_VALUE = 15;
+        public const int TIMER_INTERVAL = 1000;
 
         // This method is called when the timer fires.
         private void OnTimer(object state)
@@ -22,8 +25,8 @@ namespace FiveBomber
             // Iterate through each ProgressBar.
             for (int i = 0; i < _progressBars.Length; i++)
             {
-                // If the ProgressBar is processing and its value is less than 100,
-                if (_isProcessing[i] && _progressBars[i].Value < 100)
+                // If the ProgressBar is processing and its value is less than MAX_VALUE,
+                if (_isProcessing[i] && _progressBars[i].Value < MAX_VALUE)
                 {
                     // Invoke the ProgressBar's Value property setter on the main thread.
                     _progressBars[i].Invoke((MethodInvoker)delegate
@@ -33,8 +36,8 @@ namespace FiveBomber
                     });
                 }
 
-                // If the ProgressBar's value has reached 100,
-                if (_progressBars[i].Value == 100)
+                // If the ProgressBar's value has reached MAX_VALUE,
+                if (_progressBars[i].Value == MAX_VALUE)
                 {
                     // Set the processing flag for the ProgressBar to false.
                     _isProcessing[i] = false;
@@ -56,7 +59,8 @@ namespace FiveBomber
                     {
                         // Dispose the timer.
                         _timer.Dispose();
-                    }
+                        _isTimerDisposed = true;
+    }
                 }
             }
         }
@@ -71,6 +75,12 @@ namespace FiveBomber
                 progressBar1, progressBar2, progressBar3, progressBar4, progressBar5
             };
 
+            // Initialize all progressBars to be set maximum value.
+            foreach (var progressBar in _progressBars)
+            {
+                progressBar.Maximum = MAX_VALUE;
+            }
+
             // Initialize the _isProcessing array with a boolean value of true for each ProgressBar.
             _isProcessing = new bool[_progressBars.Length];
             for (int i = 0; i < _isProcessing.Length; i++)
@@ -79,23 +89,29 @@ namespace FiveBomber
             }
         }
 
-        // This method is called when the Start/Stop button is clicked.
         private void btnStartStop_Click(object sender, EventArgs e)
         {
             // If the timer is not null,
             if (_timer != null)
             {
                 // Stop the timer.
-                _timer.Change(Timeout.Infinite, Timeout.Infinite);
-                // Dispose the timer.
-                _timer.Dispose();
+                if (_isTimerDisposed)
+                {
+                    _timer.Dispose();
+                } else
+                {
+                    _timer.Change(Timeout.Infinite, Timeout.Infinite);
+                }
+                
                 // Set the _timer field to null.
                 _timer = null;
+                _isTimerDisposed = true;
             }
             else
             {
-                // Create a new System.Threading.Timer object that fires every 1000 milliseconds.
-                _timer = new System.Threading.Timer(OnTimer, null, 1000, 1000);
+                // Create a new System.Threading.Timer object that fires every TIMER_INTERVAL milliseconds.
+                _timer = new System.Threading.Timer(OnTimer, null, TIMER_INTERVAL, TIMER_INTERVAL);
+                _isTimerDisposed = false;
             }
 
             // Set the processing flag for each ProgressBar to true.
@@ -105,7 +121,6 @@ namespace FiveBomber
             }
         }
 
-        // This method is called when the Next button is clicked.
         private void btnNext_Click(object sender, EventArgs e)
         {
             // Iterate through each ProgressBar.
@@ -123,7 +138,6 @@ namespace FiveBomber
             }
         }
 
-        // This method is called when the Reset button is clicked.
         private void btnReset_Click(object sender, EventArgs e)
         {
             // Iterate through each ProgressBar.
